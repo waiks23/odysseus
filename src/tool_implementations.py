@@ -4485,3 +4485,59 @@ async def do_vault_unlock(content: str, owner: Optional[str] = None) -> Dict:
         pass
 
     return {"output": "Vault unlocked. Session saved.", "exit_code": 0}
+
+
+# ---------------------------------------------------------------------------
+# Fincept finance analytics tool
+# ---------------------------------------------------------------------------
+
+async def do_fincept(content: str) -> Dict:
+    """Run a FinceptTerminal analytics script and return its JSON result."""
+    import subprocess as _sp
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    try:
+        args = _parse_tool_args(content)
+    except ValueError:
+        return {"error": "Invalid JSON arguments", "exit_code": 1}
+
+    script_name = args.get("script_name", "").strip()
+    if not script_name:
+        return {"error": "script_name is required", "exit_code": 1}
+
+    engine = _Path.home() / "FinceptTerminal" / "fincept_engine.py"
+    if not engine.exists():
+        return {"error": f"fincept_engine.py not found at {engine}", "exit_code": 1}
+
+    if script_name == "list":
+        cmd = [_sys.executable, str(engine), "list"]
+    else:
+        script_args = json.dumps(args.get("args") or {})
+        cmd = [_sys.executable, str(engine), "run", script_name, "--args", script_args]
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=90)
+    except asyncio.TimeoutError:
+        return {"error": "fincept script timed out after 90s", "exit_code": 1}
+    except Exception as exc:
+        return {"error": f"Failed to launch fincept_engine: {exc}", "exit_code": 1}
+
+    out = stdout.decode("utf-8", errors="replace").strip()
+    err = stderr.decode("utf-8", errors="replace").strip()
+
+    if proc.returncode != 0:
+        return {"error": f"fincept_engine exited {proc.returncode}: {err[:400]}", "exit_code": proc.returncode}
+
+    try:
+        result = json.loads(out)
+        if isinstance(result, dict):
+            result["exit_code"] = 0
+        return result
+    except json.JSONDecodeError:
+        return {"output": out or err, "exit_code": 0}

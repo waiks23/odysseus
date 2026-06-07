@@ -1156,6 +1156,7 @@ async def execute_tool_block(
         do_manage_contact,
         do_vault_search, do_vault_get, do_vault_unlock,
         do_app_api,
+        do_fincept,
     )
 
     tool = block.tool_type
@@ -1463,6 +1464,9 @@ async def execute_tool_block(
     elif tool == "vault_unlock":
         desc = "vault_unlock"
         result = await do_vault_unlock(content, owner=owner)
+    elif tool == "fincept":
+        desc = f"fincept: {json.loads(content).get('script_name', '') if content.strip().startswith('{') else content[:40]}"
+        result = await do_fincept(content)
     elif tool.startswith("mcp__"):
         # MCP tool dispatch
         mcp = get_mcp_manager()

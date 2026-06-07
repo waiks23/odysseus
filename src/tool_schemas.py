@@ -1178,6 +1178,27 @@ FUNCTION_TOOL_SCHEMAS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "fincept",
+            "description": "Run a FinceptTerminal finance analytics script and return structured JSON. Use for stock quotes, price history, portfolio optimization, and performance analytics.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "script_name": {
+                        "type": "string",
+                        "description": "Script catalogue key, e.g. 'portfolioManagement/fetch_quotes'. Call with script_name='list' to see all available scripts."
+                    },
+                    "args": {
+                        "type": "object",
+                        "description": "JSON payload forwarded to the script. E.g. {\"symbols\": [\"AAPL\", \"MSFT\"]} for fetch_quotes."
+                    }
+                },
+                "required": ["script_name"]
+            }
+        }
+    },
 ]
 
 
